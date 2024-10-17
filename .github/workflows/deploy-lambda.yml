@@ -1,0 +1,51 @@
+name: Deploy Testing Lambda
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy_lambda:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    - name: Get AWS Account ID
+      run: echo "CDK_DEFAULT_ACCOUNT=${{ vars.AWS_ACCOUNT }}" >> $GITHUB_ENV
+
+    - name: Get AWS Region
+      run: echo "CDK_DEFAULT_REGION=${{ vars.AWS_REGION }}" >> $GITHUB_ENV
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.11.1'
+    - name: Install NPM Modules
+      run: "npm config set engine-strict true && npm ci"
+      working-directory: test_lambda
+
+    - name: Build
+      run: "npm run build"
+      working-directory: test_lambda
+
+    - name: Install AWS CDK
+      run: "npm install -g aws-cdk@2.85.0"
+
+    - name: CDK Bootstrap
+      env:
+        ENV_NAME: ${{ vars.ENV_NAME }}
+        VPC_NAME: ${{ vars.VPC_NAME }}
+      run: npx cdk bootstrap
+      working-directory: test_lambda
+
+    - name: CDK Synth & Deploy
+      env:
+        ENV_NAME: ${{ vars.ENV_NAME }}
+        VPC_NAME: ${{ vars.VPC_NAME }}
+      run: npx cdk synth && npx cdk deploy --require-approval never
+      working-directory: test_lambda
