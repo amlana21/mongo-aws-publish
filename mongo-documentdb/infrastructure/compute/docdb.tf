@@ -6,7 +6,7 @@ resource "aws_docdb_subnet_group" "mongo_grp" {
 
 resource "aws_docdb_cluster_instance" "mongo_instance" {
   count              = 1
-  identifier         = "mongo-insance-1"
+  identifier         = "mongo-instance-1"
   cluster_identifier = "${aws_docdb_cluster.mongo_cluster.id}"
   instance_class     = "db.t3.medium"
 }
